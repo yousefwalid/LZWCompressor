@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <string>
 #include "trie_node.hpp"
@@ -8,9 +10,7 @@ private:
     TrieNode *headNode;
 
 public:
-    Trie();
-    ~Trie();
     void insertWord(const std::string &word);
     uint64_t getWordIdx(const std::string &word);
-    uint64_t getMaximumMatch(const std::string &buffer, uint64_t bufferIdx);
+    uint64_t getMaximumMatch(const std::string &buffer, uint64_t &bufferIdx);
 };

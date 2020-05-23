@@ -14,7 +14,7 @@ void LZW::encode(std::ifstream &original, std::ofstream &encoded)
     while (original.get(inputChar))
         inputBuffer += inputChar;
 
-    uint64_t inputIdx = 0;
+    unsigned long long inputIdx = 0;
 
     while (inputIdx < inputBuffer.size())
     {

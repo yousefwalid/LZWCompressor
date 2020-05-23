@@ -38,7 +38,7 @@ uint64_t Trie::getWordIdx(const std::string &word)
     return currNode->word_idx;
 }
 
-uint64_t Trie::getMaximumMatch(const std::string &buffer, uint64_t bufferIdx)
+uint64_t Trie::getMaximumMatch(const std::string &buffer, uint64_t &bufferIdx)
 {
     auto curr = Trie::headNode;
     uint64_t wordIdx = 0;
