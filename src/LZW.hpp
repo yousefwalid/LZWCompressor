@@ -4,7 +4,8 @@
 
 class LZW
 {
-    void encode(std::istream &original, std::ostream &encoded);
+public:
+    void encode(std::ifstream &original, std::ofstream &encoded);
 
-    void decode(std::istream &encoded, std::ostream &decoded);
+    void decode(std::ifstream &encoded, std::ofstream &decoded);
 };

@@ -10,6 +10,7 @@ private:
 public:
     Trie();
     ~Trie();
-    void insertWord(std::string);
-    uint64_t getWordIdx(std::string);
+    void insertWord(const std::string &word);
+    uint64_t getWordIdx(const std::string &word);
+    uint64_t getMaximumMatch(const std::string &buffer, uint64_t bufferIdx);
 };
