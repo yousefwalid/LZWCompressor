@@ -1,28 +1,38 @@
-#include "LZW.hpp"
-#include "./trie/trie.hpp"
-#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
-void LZW::encode(std::ifstream &original, std::ofstream &encoded)
+class LZW
 {
-    Trie wordsDict;
-    for (uint8_t i = 0; i < -1; i++) // initialize dictionary with all symbols
-        wordsDict.insertWord(std::string(1, (char)i));
-
-    char inputChar;
-    std::string inputBuffer = "";
-
-    while (original.get(inputChar))
-        inputBuffer += inputChar;
-
-    uint64_t inputIdx = 0;
-
-    while (inputIdx < inputBuffer.size())
+public:
+    void encode(std::ifstream &original, std::ofstream &encoded)
     {
-        uint64_t idx = wordsDict.getMaximumMatch(inputBuffer, inputIdx);
-        std::cout << idx << " ";
-    }
-}
+        std::unordered_map<std::string, int> dict;
 
-void LZW::decode(std::ifstream &encoded, std::ofstream &decoded)
-{
-}
+        for (int i = 'a'; i <= 'b'; i++)
+            dict[std::string(1, (char)(i))] = dict.size();
+
+        char inputSymbol;
+        std::vector<int> toBeEncoded;
+        std::string accum = "";
+        while (original.get(inputSymbol))
+        {
+            std::string new_accum = accum + inputSymbol;
+            if (dict.count(new_accum)) // element found in dict, expand match
+                accum = new_accum;
+            else // element not found in dict, push it in dict and flush accum
+            {
+                int encodeIdx = dict[accum];
+                dict[new_accum] = dict.size();
+                toBeEncoded.push_back(encodeIdx);
+                accum = inputSymbol;
+            }
+        }
+        toBeEncoded.push_back(dict[accum]);
+    }
+
+    void decode(std::ifstream &encoded, std::ofstream &decoded)
+    {
+    }
+};

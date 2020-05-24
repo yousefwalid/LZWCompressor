@@ -1,11 +1,9 @@
-#include <fstream>
-#include "LZW.hpp"
+#include "LZW.cpp"
 
 int main()
 {
     LZW compressor;
-    std::ifstream original;
+    std::ifstream original("enwik8");
     std::ofstream encoded;
-    original.open("enwik8");
     compressor.encode(original, encoded);
 }
