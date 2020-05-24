@@ -8,31 +8,34 @@
 class LZW
 {
 private:
-    bool isPowerOfTwo(int x)
+    std::string encodeValToString(const long long &val, const long long &encodeBits)
     {
-        return (x & (x - 1)) == 0;
-    }
-
-    void encodeValIntoString(const int &val, std::string &encodedString, const int &encodeBits)
-    {
-        for (int i = 0; i < encodeBits; i++)
+        std::string encodedString = "";
+        for (long long i = 0; i < encodeBits; i++)
             encodedString += (((val >> (encodeBits - i - 1)) & 1) + '0');
+        return encodedString;
     }
 
 public:
     void encode(std::ifstream &original, std::ofstream &encoded)
     {
-        std::unordered_map<std::string, int> dict;
+        std::unordered_map<std::string, long long> dict;
 
         for (int i = 0; i <= 255; i++)
             dict[std::string(1, (char)(i))] = dict.size();
 
         char inputSymbol;
-        std::string encodedString = "";
-        int encodeBits = 1;
-        while (encodeBits < dict.size())
-            encodeBits *= 2;
+
+        long long encodedStringLength = 0;
+
+        long long encodeBits = 1;
+        while ((1 << (encodeBits - 1)) < dict.size())
+            encodeBits++;
         std::string accum = "";
+
+        BitBuffer parsingBuffer;
+
+        encoded.put(55); // push initial character to be replaced later
 
         while (original.get(inputSymbol))
         {
@@ -41,9 +44,14 @@ public:
                 accum = new_accum;
             else // element not found in dict, push it in dict and flush accum
             {
-                int encodeIdx = dict[accum];
+                long long encodeIdx = dict[accum];
 
-                encodeValIntoString(encodeIdx, encodedString, encodeBits);
+                auto temps = encodeValToString(encodeIdx, encodeBits);
+                encodedStringLength += temps.size();
+                parsingBuffer.push(temps);
+
+                while (parsingBuffer.hasByte())
+                    encoded.put(parsingBuffer.pop());
 
                 dict[new_accum] = dict.size();
 
@@ -54,28 +62,30 @@ public:
             }
         }
 
-        int encodeIdx = dict[accum];
-        encodeValIntoString(encodeIdx, encodedString, encodeBits);
+        long long encodeIdx = dict[accum];
+        auto temps = encodeValToString(encodeIdx, encodeBits);
+        encodedStringLength += temps.size();
+        parsingBuffer.push(temps);
 
-        BitBuffer parsingBuffer;
+        while (parsingBuffer.hasByte())
+            encoded.put(parsingBuffer.pop());
 
-        int numOfPaddingBits = (8 - (encodedString.size() + 3) % 8) % 8;
-        std::string numOfPadding = "";
+        if (!parsingBuffer.isEmpty())
+            encoded.put(parsingBuffer.pop());
+
+        int numOfPaddingBits = (8 - (encodedStringLength % 8) % 8);
+
+        char numOfPadding = 0;
         for (int i = 0; i < 3; i++)
-            numOfPadding += ((numOfPaddingBits >> (2 - i)) & 1) + '0';
-
-        encodedString.insert(0, numOfPadding);
-
-        for (auto &c : encodedString)
         {
-            parsingBuffer.push(c);
-            if (parsingBuffer.hasByte())
-                encoded.put(parsingBuffer.pop());
+            numOfPadding <<= 1;
+            numOfPadding |= (numOfPaddingBits >> (2 - i));
         }
 
-        char lastByte = parsingBuffer.pop();
-        if (lastByte != 0)
-            encoded.put(lastByte);
+        std::cout << dict.size() << " " << encodeBits << "\n";
+
+        encoded.seekp(0, std::ios::beg);
+        encoded.put(numOfPadding);
 
         original.close();
         encoded.close();
@@ -84,6 +94,17 @@ public:
     void decode(std::ifstream &encoded, std::ofstream &decoded)
     {
         std::string stream = "";
+
+        char paddingLengthC;
+        encoded.get(paddingLengthC);
+
+        int paddingLength = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            paddingLength <<= 1;
+            paddingLength |= ((paddingLengthC >> (2 - i)) & 1);
+        }
+
         char c;
         while (encoded.get(c))
         {
@@ -91,34 +112,25 @@ public:
                 stream += ((c >> (7 - i)) & 1) + '0';
         }
 
-        std::string paddingLengthString = stream.substr(0, 3);
-        stream.erase(0, 3);
-        int paddingLength = 0;
-        for (int i = 0; i < paddingLengthString.size(); i++)
-        {
-            paddingLength <<= 1;
-            paddingLength |= (paddingLengthString[i] - '0');
-        }
-
         stream.erase(stream.end() - paddingLength, stream.end());
 
-        std::unordered_map<int, std::string> dict;
+        std::unordered_map<long long, std::string> dict;
 
         for (int i = 0; i <= 255; i++)
             dict[i] = std::string(1, (char)(i));
 
         std::string decodedString = "";
         std::string new_accum = "";
-        int encodeBits = 1;
+        long long encodeBits = 1;
         while (encodeBits < dict.size())
             encodeBits *= 2;
 
-        int idx = 0;
+        long long idx = 0;
         bool firstTime = true;
         while (idx < stream.length())
         {
-            int accumIdx = 0;
-            for (int i = 0; i < encodeBits; i++)
+            long long accumIdx = 0;
+            for (long long i = 0; i < encodeBits; i++)
             {
                 accumIdx <<= 1;
                 accumIdx |= (stream[idx++] - '0');

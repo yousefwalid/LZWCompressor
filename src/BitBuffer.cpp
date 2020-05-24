@@ -23,6 +23,11 @@ public:
         return buffer.size() / 8;
     }
 
+    bool isEmpty()
+    {
+        return buffer.size() == 0;
+    }
+
     char pop() // Pops a single byte from the buffer
     {
         char Byte = 0;

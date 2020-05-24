@@ -23,7 +23,7 @@ int main()
 {
     LZW compressor;
     std::ifstream original("enwik8");
-    std::ofstream encoded("bin");
+    std::ofstream encoded("bin", std::ios::binary);
     std::cout << "Encoding.." << std::endl;
 
     clock_t startTime = clock();
@@ -32,7 +32,7 @@ int main()
 
     calculateStatisticsASCII("enwik8", "bin");
 
-    std::ifstream encodedStream("bin");
+    std::ifstream encodedStream("bin", std::ios::binary);
     std::ofstream decoded("dec_enwik8");
     std::cout << "Decoding.." << std::endl;
 
