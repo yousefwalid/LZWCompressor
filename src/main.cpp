@@ -1,5 +1,6 @@
 #include "LZW.cpp"
 #include <ctime>
+#include <chrono>
 void calculateStatisticsASCII(const char *inputFile, const char *outputFile)
 {
     FILE *file;
@@ -22,21 +23,23 @@ void calculateStatisticsASCII(const char *inputFile, const char *outputFile)
 int main()
 {
     LZW compressor;
-    std::ifstream original("enwik8");
+    std::ifstream original("enwik8", std::ios::binary);
     std::ofstream encoded("bin", std::ios::binary);
     std::cout << "Encoding.." << std::endl;
 
-    clock_t startTime = clock();
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     compressor.encode(original, encoded);
-    std::cout << "Finished encoding, took " << double(clock() - startTime) << " s. " << std::endl;
+    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    std::cout << "Finished encoding, took " << std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count() << " s. " << std::endl;
 
     calculateStatisticsASCII("enwik8", "bin");
 
     std::ifstream encodedStream("bin", std::ios::binary);
-    std::ofstream decoded("dec_enwik8");
+    std::ofstream decoded("dec_enwik8", std::ios::binary);
     std::cout << "Decoding.." << std::endl;
 
-    startTime = clock();
+    start = std::chrono::high_resolution_clock::now();
     compressor.decode(encodedStream, decoded);
-    std::cout << "Finished decoding, took " << double(clock() - startTime) << " s. " << std::endl;
+    end = std::chrono::high_resolution_clock::now();
+    std::cout << "Finished decoding, took " << std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count() << " s. " << std::endl;
 }

@@ -82,8 +82,6 @@ public:
             numOfPadding |= (numOfPaddingBits >> (2 - i));
         }
 
-        std::cout << dict.size() << " " << encodeBits << "\n";
-
         encoded.seekp(0, std::ios::beg);
         encoded.put(numOfPadding);
 
@@ -93,8 +91,6 @@ public:
 
     void decode(std::ifstream &encoded, std::ofstream &decoded)
     {
-        std::string stream = "";
-
         char paddingLengthC;
         encoded.get(paddingLengthC);
 
@@ -105,36 +101,48 @@ public:
             paddingLength |= ((paddingLengthC >> (2 - i)) & 1);
         }
 
-        char c;
-        while (encoded.get(c))
-        {
-            for (int i = 0; i < 8; i++)
-                stream += ((c >> (7 - i)) & 1) + '0';
-        }
-
-        stream.erase(stream.end() - paddingLength, stream.end());
-
         std::unordered_map<long long, std::string> dict;
 
         for (int i = 0; i <= 255; i++)
             dict[i] = std::string(1, (char)(i));
 
-        std::string decodedString = "";
         std::string new_accum = "";
         long long encodeBits = 1;
-        while (encodeBits < dict.size())
-            encodeBits *= 2;
+        while ((1 << (encodeBits - 1)) < dict.size())
+            encodeBits++;
 
         long long idx = 0;
         bool firstTime = true;
-        while (idx < stream.length())
+
+        char c;
+        std::string stream = "";
+        while (!encoded.eof() || !stream.empty())
         {
+            int counter = 0;
+
+            while (stream.length() < encodeBits)
+            {
+                encoded.get(c);
+                if (encoded.peek() == EOF)
+                {
+                    for (int i = 0; i < 8 - paddingLength; i++)
+                        stream += ((c >> (7 - i)) & 1) + '0';
+                }
+                else
+                {
+                    for (int i = 0; i < 8; i++)
+                        stream += ((c >> (7 - i)) & 1) + '0';
+                }
+            }
+
             long long accumIdx = 0;
             for (long long i = 0; i < encodeBits; i++)
             {
                 accumIdx <<= 1;
-                accumIdx |= (stream[idx++] - '0');
+                accumIdx |= (stream[i] - '0');
             }
+
+            stream.erase(0, encodeBits);
 
             if (!firstTime)
             {
@@ -145,17 +153,14 @@ public:
             else
                 firstTime = false;
 
-            decodedString.append(dict[accumIdx]);
+            std::string word = dict[accumIdx];
+            for (auto &c : word)
+                decoded.put(c);
 
             dict[dict.size()] = dict[accumIdx] + "?";
 
             if (dict.size() > ((1 << encodeBits) - 1))
                 encodeBits++;
-        }
-
-        for (auto &c : decodedString)
-        {
-            decoded.put(c);
         }
 
         decoded.close();
