@@ -5,6 +5,18 @@
 
 class LZW
 {
+private:
+    bool isPowerOfTwo(int x)
+    {
+        return (x & (x - 1)) == 0;
+    }
+
+    void encodeValIntoString(const int &val, std::string &encodedString, const int &encodeBits)
+    {
+        for (int i = 0; i < encodeBits; i++)
+            encodedString += (((val >> (encodeBits - i - 1)) & 1) + '0');
+    }
+
 public:
     void encode(std::ifstream &original, std::ofstream &encoded)
     {
@@ -14,8 +26,12 @@ public:
             dict[std::string(1, (char)(i))] = dict.size();
 
         char inputSymbol;
-        std::vector<int> toBeEncoded;
+        std::string encodedString = "";
+        int encodeBits = 1;
+        while (encodeBits < dict.size())
+            encodeBits *= 2;
         std::string accum = "";
+
         while (original.get(inputSymbol))
         {
             std::string new_accum = accum + inputSymbol;
@@ -24,12 +40,20 @@ public:
             else // element not found in dict, push it in dict and flush accum
             {
                 int encodeIdx = dict[accum];
+
+                encodeValIntoString(encodeIdx, encodedString, encodeBits);
+
                 dict[new_accum] = dict.size();
-                toBeEncoded.push_back(encodeIdx);
+
+                if (dict.size() > ((1 << encodeBits) - 1))
+                    encodeBits++;
+
                 accum = inputSymbol;
             }
         }
-        toBeEncoded.push_back(dict[accum]);
+
+        int encodeIdx = dict[accum];
+        encodeValIntoString(encodeIdx, encodedString, encodeBits);
     }
 
     void decode(std::ifstream &encoded, std::ofstream &decoded)
